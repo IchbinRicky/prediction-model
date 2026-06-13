@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>World Cup 2026 Intelligence</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --ink:#17251f; --muted:#65726c; --paper:#f3f0e8; --card:#fffdf7;
+      --line:#d9d5ca; --green:#123f2d; --lime:#c6ef6b; --red:#c94836;
+    }
+    * { box-sizing:border-box }
+    body { margin:0; color:var(--ink); background:var(--paper); overflow-x:hidden;
+      font:15px/1.5 Inter,Segoe UI,Arial,sans-serif }
+    header { padding:28px clamp(20px,5vw,72px); color:white; background:var(--green);
+      display:flex; align-items:end; justify-content:space-between; gap:24px }
+    .eyebrow { color:var(--lime); text-transform:uppercase; letter-spacing:.14em;
+      font-size:12px; font-weight:800 }
+    h1 { margin:5px 0 0; font:700 clamp(30px,5vw,58px)/.98 Georgia,serif }
+    .stamp { text-align:right; color:#c9d8d0 }
+    main { max-width:1500px; margin:auto; padding:28px clamp(16px,4vw,56px) 56px }
+    .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px }
+    .metric,.panel { background:var(--card); border:1px solid var(--line); border-radius:16px }
+    .metric { padding:18px }
+    .metric b { display:block; font:700 28px Georgia,serif }
+    .metric span { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.08em }
+    .grid { display:grid; grid-template-columns:1.4fr 1fr; gap:20px }
+    .panel { padding:22px; min-width:0 }
+    .wide { grid-column:1/-1 }
+    h2 { margin:0 0 15px; font:700 22px Georgia,serif }
+    .sub { color:var(--muted); font-size:13px; margin:-10px 0 18px }
+    .chart-box { height:340px }
+    table { width:100%; border-collapse:collapse }
+    .table-wrap { max-width:100%; overflow-x:auto }
+    th { color:var(--muted); text-align:left; font-size:11px; letter-spacing:.07em;
+      text-transform:uppercase; border-bottom:1px solid var(--line); padding:9px 7px }
+    td { border-bottom:1px solid #ebe7de; padding:11px 7px; white-space:nowrap }
+    tr:last-child td { border:0 }
+    .prob { font-variant-numeric:tabular-nums }
+    .bar { display:flex; height:7px; overflow:hidden; border-radius:10px; background:#eee }
+    .bar i:nth-child(1) { background:#1c6549 } .bar i:nth-child(2) { background:#c8b95e }
+    .bar i:nth-child(3) { background:#a9b3ae }
+    .tag { display:inline-block; border-radius:999px; padding:3px 8px; font-size:11px;
+      background:#e7eee9; color:#24533f }
+    .days { display:grid; gap:22px }
+    .day-title { display:flex; align-items:center; gap:10px; margin:0 0 10px;
+      font:700 18px Georgia,serif }
+    .day-title span { color:var(--muted); font:600 12px Inter,Segoe UI,sans-serif }
+    .match-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); gap:12px }
+    .group-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:12px }
+    .group-card { border:1px solid var(--line); border-radius:13px; overflow:hidden; background:#fff }
+    .group-card h3 { margin:0; padding:11px 14px; color:white; background:var(--green);
+      font:700 17px Georgia,serif }
+    .qualifier-row { display:grid; grid-template-columns:minmax(105px,1fr) 72px 72px;
+      gap:8px; align-items:center; padding:9px 12px; border-bottom:1px solid #ebe7de }
+    .qualifier-row:last-child { border:0 }
+    .qualifier-row small { color:var(--muted); text-align:right }
+    .qualifier-status { display:inline-block; margin-top:3px; border-radius:999px; padding:2px 7px;
+      font-size:10px; font-weight:800 }
+    .status-direct { color:#24533f; background:#dfece4 }
+    .status-third { color:#755b09; background:#f3e7b7 }
+    .status-out { color:#65726c; background:#eceae4 }
+    .match-card { border:1px solid var(--line); border-radius:14px; padding:16px;
+      background:#fff; display:flex; flex-direction:column; gap:11px }
+    .match-head { display:flex; justify-content:space-between; gap:10px; color:var(--muted);
+      font-size:12px }
+    .teams { font:700 19px Georgia,serif }
+    .pick { padding:13px; border-radius:12px; background:#eef4ef }
+    .pick small { display:block; color:var(--muted); margin-bottom:2px }
+    .pick strong { font:700 25px Georgia,serif; color:var(--green) }
+    .final-pick { padding:14px; border-radius:12px; color:white; background:var(--green) }
+    .final-pick small { display:block; color:#c9d8d0; margin-bottom:2px }
+    .final-pick strong { font:700 27px Georgia,serif; color:var(--lime) }
+    .analysis-basis { margin:0; padding-left:18px; color:#445149 }
+    .analysis-basis li { margin:5px 0 }
+    .confidence { float:right; margin-top:5px; border-radius:999px; padding:3px 8px;
+      background:var(--green); color:white; font-size:11px }
+    .quick { display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:13px }
+    .quick div { padding:8px; background:#f6f4ee; border-radius:9px }
+    details { border-top:1px solid #ebe7de; padding-top:9px }
+    summary { cursor:pointer; color:#24533f; font-weight:700 }
+    .factor-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+      gap:10px; margin-top:14px }
+    .factor { border-left:4px solid #c8b95e; background:#f8f5eb; padding:12px 14px;
+      border-radius:8px }
+    .factor b { display:block; margin-bottom:4px }
+    .factor p { margin:5px 0; color:#445149 }
+    .factor a,.source-link { color:#24533f }
+    .investigation-row td { padding:0 7px 14px; background:#fbfaf5 }
+    .investigation-row details { border:0; padding:10px 0 0 }
+    .risk { display:inline-block; min-width:42px; text-align:center; border-radius:999px;
+      padding:4px 9px; font-size:11px; font-weight:800 }
+    .risk-high { color:#8e2d21; background:#f7d9d4 }
+    .risk-medium { color:#755b09; background:#f3e7b7 }
+    .risk-low { color:#24533f; background:#dfece4 }
+    .risk-impact { display:block; margin-top:5px; max-width:460px; white-space:normal;
+      color:#445149; font-size:13px }
+    .section-details { border:0; padding:0 }
+    .section-details > summary { font:700 22px Georgia,serif; color:var(--ink) }
+    .section-details[open] > summary { margin-bottom:15px }
+    .news-date { color:var(--muted); font-size:12px }
+    .agree { color:#24533f; font-weight:700 }
+    .disagree { color:var(--red); font-weight:700 }
+    .hot { color:var(--red); font-weight:800 }
+    .empty { color:var(--muted); padding:42px 8px; text-align:center; border:1px dashed var(--line);
+      border-radius:12px }
+    footer { color:var(--muted); text-align:center; padding-top:24px; font-size:12px }
+    @media(max-width:850px) {
+      .metrics { grid-template-columns:repeat(2,1fr) } .grid { grid-template-columns:1fr }
+      .wide { grid-column:auto } header { align-items:start; flex-direction:column }
+      .stamp { text-align:left }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div><div class="eyebrow">Model vs Market</div><h1>World Cup<br>Intelligence</h1></div>
+  <div class="stamp">2026 ANALYTICS SYSTEM<br><strong id="generated"></strong></div>
+</header>
+<main>
+  <section class="metrics" id="metrics"></section>
+  <section class="grid">
+    <article class="panel wide">
+      <h2>奪冠機率軌跡</h2><p class="sub">最新快照前八名，追蹤每日模型信心變化</p>
+      <div class="chart-box"><canvas id="titleChart"></canvas></div>
+    </article>
+    <article class="panel wide">
+      <h2>小組出線國家預測</h2><p class="sub">每組選出兩個優先席位，再從十二組第三順位中選出晉級機率最高的八隊；百分比為進入 32 強／小組第一機率</p>
+      <div id="groupPredictions"></div>
+    </article>
+    <article class="panel wide">
+      <h2>未來三天賽事判斷</h2><p class="sub">先看整體勝負方向、信心與比分傾向；單一最可能比分可能與加總後的勝負方向不同，完整數據可展開查看</p>
+      <div id="upcoming"></div>
+    </article>
+    <article class="panel wide">
+      <h2>已賽模型回顧</h2><p class="sub">實際比分對照 calibrated_v2；M1–M2 使用最早可用快照回溯，M3 為同日賽前快照</p>
+      <div class="table-wrap" id="completedMatches"></div>
+    </article>
+    <article class="panel wide">
+      <details class="section-details">
+        <summary>賽前情報與風險</summary>
+        <p class="sub">依消息發布日期由新到舊排列；風險代表對先發、戰術或臨場狀態的可能影響，不會自動改寫 Elo</p>
+        <div class="table-wrap" id="teamNews"></div>
+      </details>
+    </article>
+    <article class="panel wide">
+      <details class="section-details" id="calibrationDetails">
+        <summary>預測校準</summary>
+        <p class="sub">檢查模型機率是否符合實際發生頻率，而不只看猜中幾場；累積 Brier score 越低越好</p>
+        <div class="chart-box"><canvas id="brierChart"></canvas></div>
+      </details>
+    </article>
+    <article class="panel wide">
+      <details class="section-details">
+        <summary>市場分歧詳細表</summary>
+        <p class="sub">保留完整模型與市場差異，作為下層診斷資訊，不直接等同投注訊號</p>
+        <div class="table-wrap" id="divergence"></div>
+      </details>
+    </article>
+  </section>
+  <footer>第三名晉級採限制條件隨機分配近似；市場資料由 data/odds.csv 手動維護。</footer>
+</main>
+<script>
+const D={"generated": "2026-06-13", "topTeams": ["Spain", "Argentina", "France", "England", "Portugal", "Colombia", "Brazil", "Netherlands"], "history": [{"date": "2026-06-12", "team": "Spain", "group_winner": 0.9242, "r32": 1.0, "r16": 0.9026, "qf": 0.7294, "sf": 0.6546, "final": 0.5038, "champion": 0.3444}, {"date": "2026-06-12", "team": "Argentina", "group_winner": 0.9246, "r32": 0.9984, "r16": 0.8002, "qf": 0.7188, "sf": 0.5564, "final": 0.4078, "champion": 0.2342}, {"date": "2026-06-12", "team": "France", "group_winner": 0.7306, "r32": 0.9972, "r16": 0.8568, "qf": 0.6354, "sf": 0.471, "final": 0.2342, "champion": 0.1342}, {"date": "2026-06-12", "team": "England", "group_winner": 0.718, "r32": 0.9986, "r16": 0.7964, "qf": 0.5042, "sf": 0.3144, "final": 0.1572, "champion": 0.0666}, {"date": "2026-06-12", "team": "Colombia", "group_winner": 0.4836, "r32": 0.9836, "r16": 0.7076, "qf": 0.3822, "sf": 0.1718, "final": 0.0846, "champion": 0.0352}, {"date": "2026-06-12", "team": "Portugal", "group_winner": 0.4952, "r32": 0.9866, "r16": 0.7146, "qf": 0.3946, "sf": 0.1822, "final": 0.096, "champion": 0.0342}, {"date": "2026-06-12", "team": "Brazil", "group_winner": 0.7684, "r32": 0.9948, "r16": 0.6646, "qf": 0.4052, "sf": 0.2174, "final": 0.0848, "champion": 0.032}, {"date": "2026-06-12", "team": "Netherlands", "group_winner": 0.5766, "r32": 0.9772, "r16": 0.5992, "qf": 0.3562, "sf": 0.1532, "final": 0.0484, "champion": 0.0148}, {"date": "2026-06-13", "team": "Spain", "group_winner": 0.8068, "r32": 0.9946, "r16": 0.7626, "qf": 0.5734, "sf": 0.4718, "final": 0.3444, "champion": 0.236}, {"date": "2026-06-13", "team": "Argentina", "group_winner": 0.7392, "r32": 0.9822, "r16": 0.693, "qf": 0.5498, "sf": 0.3988, "final": 0.2756, "champion": 0.1726}, {"date": "2026-06-13", "team": "France", "group_winner": 0.5762, "r32": 0.9508, "r16": 0.7252, "qf": 0.5034, "sf": 0.3486, "final": 0.1952, "champion": 0.1178}, {"date": "2026-06-13", "team": "England", "group_winner": 0.6422, "r32": 0.9762, "r16": 0.7104, "qf": 0.4434, "sf": 0.2864, "final": 0.162, "champion": 0.0856}, {"date": "2026-06-13", "team": "Portugal", "group_winner": 0.4978, "r32": 0.9272, "r16": 0.6398, "qf": 0.3772, "sf": 0.2026, "final": 0.1122, "champion": 0.0498}, {"date": "2026-06-13", "team": "Colombia", "group_winner": 0.4074, "r32": 0.9066, "r16": 0.5888, "qf": 0.3352, "sf": 0.1804, "final": 0.096, "champion": 0.0412}, {"date": "2026-06-13", "team": "Brazil", "group_winner": 0.5464, "r32": 0.9432, "r16": 0.56, "qf": 0.3252, "sf": 0.1728, "final": 0.0718, "champion": 0.0306}, {"date": "2026-06-13", "team": "Netherlands", "group_winner": 0.4642, "r32": 0.9202, "r16": 0.5454, "qf": 0.3234, "sf": 0.166, "final": 0.071, "champion": 0.0276}], "latest": [{"date": "2026-06-13", "team": "Spain", "group_winner": 0.8068, "r32": 0.9946, "r16": 0.7626, "qf": 0.5734, "sf": 0.4718, "final": 0.3444, "champion": 0.236}, {"date": "2026-06-13", "team": "Argentina", "group_winner": 0.7392, "r32": 0.9822, "r16": 0.693, "qf": 0.5498, "sf": 0.3988, "final": 0.2756, "champion": 0.1726}, {"date": "2026-06-13", "team": "France", "group_winner": 0.5762, "r32": 0.9508, "r16": 0.7252, "qf": 0.5034, "sf": 0.3486, "final": 0.1952, "champion": 0.1178}, {"date": "2026-06-13", "team": "England", "group_winner": 0.6422, "r32": 0.9762, "r16": 0.7104, "qf": 0.4434, "sf": 0.2864, "final": 0.162, "champion": 0.0856}, {"date": "2026-06-13", "team": "Portugal", "group_winner": 0.4978, "r32": 0.9272, "r16": 0.6398, "qf": 0.3772, "sf": 0.2026, "final": 0.1122, "champion": 0.0498}, {"date": "2026-06-13", "team": "Colombia", "group_winner": 0.4074, "r32": 0.9066, "r16": 0.5888, "qf": 0.3352, "sf": 0.1804, "final": 0.096, "champion": 0.0412}, {"date": "2026-06-13", "team": "Brazil", "group_winner": 0.5464, "r32": 0.9432, "r16": 0.56, "qf": 0.3252, "sf": 0.1728, "final": 0.0718, "champion": 0.0306}, {"date": "2026-06-13", "team": "Netherlands", "group_winner": 0.4642, "r32": 0.9202, "r16": 0.5454, "qf": 0.3234, "sf": 0.166, "final": 0.071, "champion": 0.0276}], "groupPredictions": [{"group": "A", "teams": [{"team": "Mexico", "r32": 0.9908, "group_winner": 0.634, "status": "direct"}, {"team": "South Korea", "r32": 0.9636, "group_winner": 0.3324, "status": "direct"}, {"team": "Czechia", "r32": 0.5658, "group_winner": 0.0314, "status": "out"}, {"team": "South Africa", "r32": 0.1632, "group_winner": 0.0022, "status": "out"}]}, {"group": "B", "teams": [{"team": "Switzerland", "r32": 0.9632, "group_winner": 0.6006, "status": "direct"}, {"team": "Canada", "r32": 0.885, "group_winner": 0.2942, "status": "direct"}, {"team": "Bosnia", "r32": 0.6588, "group_winner": 0.0874, "status": "best_third"}, {"team": "Qatar", "r32": 0.1848, "group_winner": 0.0178, "status": "out"}]}, {"group": "C", "teams": [{"team": "Brazil", "r32": 0.9432, "group_winner": 0.5464, "status": "direct"}, {"team": "Morocco", "r32": 0.8586, "group_winner": 0.3064, "status": "direct"}, {"team": "Scotland", "r32": 0.6606, "group_winner": 0.1252, "status": "best_third"}, {"team": "Haiti", "r32": 0.2262, "group_winner": 0.022, "status": "out"}]}, {"group": "D", "teams": [{"team": "USA", "r32": 0.9558, "group_winner": 0.4394, "status": "direct"}, {"team": "Turkey", "r32": 0.8124, "group_winner": 0.3396, "status": "direct"}, {"team": "Australia", "r32": 0.6448, "group_winner": 0.1858, "status": "best_third"}, {"team": "Paraguay", "r32": 0.3442, "group_winner": 0.0352, "status": "out"}]}, {"group": "E", "teams": [{"team": "Germany", "r32": 0.9432, "group_winner": 0.434, "status": "direct"}, {"team": "Ecuador", "r32": 0.9402, "group_winner": 0.4474, "status": "direct"}, {"team": "Ivory Coast", "r32": 0.7052, "group_winner": 0.1116, "status": "best_third"}, {"team": "Curacao", "r32": 0.1192, "group_winner": 0.007, "status": "out"}]}, {"group": "F", "teams": [{"team": "Netherlands", "r32": 0.9202, "group_winner": 0.4642, "status": "direct"}, {"team": "Japan", "r32": 0.9038, "group_winner": 0.4268, "status": "direct"}, {"team": "Sweden", "r32": 0.472, "group_winner": 0.0688, "status": "out"}, {"team": "Tunisia", "r32": 0.3684, "group_winner": 0.0402, "status": "out"}]}, {"group": "G", "teams": [{"team": "Belgium", "r32": 0.9322, "group_winner": 0.5308, "status": "direct"}, {"team": "Iran", "r32": 0.8154, "group_winner": 0.2852, "status": "direct"}, {"team": "Egypt", "r32": 0.6466, "group_winner": 0.1442, "status": "best_third"}, {"team": "New Zealand", "r32": 0.3024, "group_winner": 0.0398, "status": "out"}]}, {"group": "H", "teams": [{"team": "Spain", "r32": 0.9946, "group_winner": 0.8068, "status": "direct"}, {"team": "Uruguay", "r32": 0.8914, "group_winner": 0.1714, "status": "direct"}, {"team": "Cape Verde", "r32": 0.3068, "group_winner": 0.0116, "status": "out"}, {"team": "Saudi Arabia", "r32": 0.3, "group_winner": 0.0102, "status": "out"}]}, {"group": "I", "teams": [{"team": "France", "r32": 0.9508, "group_winner": 0.5762, "status": "direct"}, {"team": "Norway", "r32": 0.8258, "group_winner": 0.231, "status": "direct"}, {"team": "Senegal", "r32": 0.7776, "group_winner": 0.1778, "status": "best_third"}, {"team": "Iraq", "r32": 0.1678, "group_winner": 0.015, "status": "out"}]}, {"group": "J", "teams": [{"team": "Argentina", "r32": 0.9822, "group_winner": 0.7392, "status": "direct"}, {"team": "Austria", "r32": 0.725, "group_winner": 0.132, "status": "direct"}, {"team": "Algeria", "r32": 0.6444, "group_winner": 0.1046, "status": "best_third"}, {"team": "Jordan", "r32": 0.2836, "group_winner": 0.0242, "status": "out"}]}, {"group": "K", "teams": [{"team": "Portugal", "r32": 0.9272, "group_winner": 0.4978, "status": "direct"}, {"team": "Colombia", "r32": 0.9066, "group_winner": 0.4074, "status": "direct"}, {"team": "Uzbekistan", "r32": 0.4804, "group_winner": 0.062, "status": "out"}, {"team": "DR Congo", "r32": 0.3208, "group_winner": 0.0328, "status": "out"}]}, {"group": "L", "teams": [{"team": "England", "r32": 0.9762, "group_winner": 0.6422, "status": "direct"}, {"team": "Croatia", "r32": 0.9144, "group_winner": 0.2924, "status": "direct"}, {"team": "Panama", "r32": 0.5858, "group_winner": 0.0594, "status": "best_third"}, {"team": "Ghana", "r32": 0.1488, "group_winner": 0.006, "status": "out"}]}], "upcoming": [{"date": "2026-06-14", "match_id": "M5", "stage": "Group B", "team_a": "Qatar", "team_b": "Switzerland", "model_a": 0.0500896121, "model_draw": 0.132026479, "model_b": 0.8178839089, "baseline_model_a": 0.0636997908, "baseline_model_draw": 0.1615668728, "baseline_model_b": 0.7747333364, "model_a_by_1": 0.0419185477, "model_a_by_2_plus": 0.0081710644, "model_b_by_1": 0.230779891, "model_b_by_2_plus": 0.5871040179, "expected_goals_a": 0.4161731502, "expected_goals_b": 2.3975253017, "most_likely_score": "0-2", "score_model": "calibrated_v2", "baseline_expected_goals_a": 0.4200104867, "baseline_expected_goals_b": 2.115703799, "model_version": "context_v1", "lineup_version": "pre_lineup", "context_summary": "Qatar Tarek Salman 確認停賽", "attack_factor_a": 0.9908637126, "attack_factor_b": 1.087528418, "personnel_goal_delta_a": 0.0, "personnel_goal_delta_b": 0.0966372962, "market_a": 0.0732292917, "market_draw": 0.1464585834, "market_b": 0.7803121248, "actual_result": null, "model_brier": null, "baseline_model_brier": null, "market_brier": null, "actual_margin_bucket": null, "predicted_margin_bucket": null, "actual_margin_probability": null, "margin_log_loss": null, "margin_correct": null, "predicted_outcome": "B", "predicted_team": "Switzerland", "predicted_probability": 0.8178839089, "confidence_gap": 0.6858574299, "confidence_label": "高信心", "market_team": "Switzerland", "market_probability": 0.7803121248, "model_market_agree": true, "margin_summary": "較可能贏 2 球以上", "reviewed_at": "2026-06-13T15:30:00+09:30", "final_pick": "B", "confidence": "高", "venue": "San Francisco Bay Area Stadium", "weather": "灣區熱浪正降溫，但南灣仍可能偏暖；目前不構成改變勝負方向的主要因素", "personnel": "卡達 Tarek Salman 確認停賽，中路防守風險上升；瑞士未見已核實重大缺席", "other_factors": "context_v1 模型 81.8% 與市場 78.0% 同方向；攻防資料與停賽修正均對卡達不利", "rationale": "綜合判斷瑞士獲勝；模型、市場及人員資訊三者方向一致", "source_urls": "https://www.sfchronicle.com/weather-forecast/article/forecast-heat-temperature-weekend-22301046.php;https://en.wikipedia.org/wiki/2026_FIFA_World_Cup", "final_pick_team": "Switzerland"}, {"date": "2026-06-14", "match_id": "M6", "stage": "Group C", "team_a": "Brazil", "team_b": "Morocco", "model_a": 0.4714341412, "model_draw": 0.2603988399, "model_b": 0.2681670188, "baseline_model_a": 0.5417889053, "baseline_model_draw": 0.2397202462, "baseline_model_b": 0.2184908485, "model_a_by_1": 0.2459285886, "model_a_by_2_plus": 0.2255055526, "model_b_by_1": 0.1735359812, "model_b_by_2_plus": 0.0946310376, "expected_goals_a": 1.4032804597, "expected_goals_b": 0.9820385011, "most_likely_score": "1-0", "score_model": "calibrated_v2", "baseline_expected_goals_a": 1.6163140543, "baseline_expected_goals_b": 0.9194002314, "model_version": "context_v1", "lineup_version": "pre_lineup", "context_summary": "Brazil Neymar 確認缺席；Morocco Noussair Mazraoui 出賽成疑；Morocco Abde Ezzalzouli 出賽成疑", "attack_factor_a": 0.8950493763, "attack_factor_b": 1.0860493044, "personnel_goal_delta_a": -0.0434004266, "personnel_goal_delta_b": -0.0164754807, "market_a": 0.5704400538, "market_draw": 0.249192234, "market_b": 0.1803677122, "actual_result": null, "model_brier": null, "baseline_model_brier": null, "market_brier": null, "actual_margin_bucket": null, "predicted_margin_bucket": null, "actual_margin_probability": null, "margin_log_loss": null, "margin_correct": null, "predicted_outcome": "A", "predicted_team": "Brazil", "predicted_probability": 0.4714341412, "confidence_gap": 0.2032671224, "confidence_label": "低信心", "market_team": "Brazil", "market_probability": 0.5704400538, "model_market_agree": true, "margin_summary": "較可能贏 1 球", "reviewed_at": "2026-06-13T15:30:00+09:30", "final_pick": "A", "confidence": "低", "venue": "New York New Jersey Stadium", "weather": "美國東北部存在雷雨與陣風風險，可能打亂比賽節奏，但暫不足以改變方向", "personnel": "巴西 Neymar 確認缺席；摩洛哥 Mazraoui 與 Ezzalzouli 出賽成疑，雙方都有前場或邊路不確定性", "other_factors": "context_v1 模型巴西 47.1%、平局 26.0%、摩洛哥 26.8%；市場仍較偏巴西 57.0%", "rationale": "綜合仍選巴西獲勝，但攻防與人員修正已明顯縮小優勢，因此降為低信心", "source_urls": "https://www.theguardian.com/environment/2026/jun/12/weather-tracker-heat-humidity-thunderstorms-risk-world-cup;https://www.theguardian.com/football/2026/jun/12/more-pressure-than-the-president-ancelotti-sets-out-to-end-brazils-world-cup-drought;https://www.thesun.ie/sport/17070767/man-utd-noussair-mazraoui-morocco-norway-world-cup/", "final_pick_team": "Brazil"}, {"date": "2026-06-14", "match_id": "M7", "stage": "Group C", "team_a": "Haiti", "team_b": "Scotland", "model_a": 0.1923129571, "model_draw": 0.2259503395, "model_b": 0.5817367033, "baseline_model_a": 0.1679469717, "baseline_model_draw": 0.223290075, "baseline_model_b": 0.6087629534, "model_a_by_1": 0.131496395, "model_a_by_2_plus": 0.0608165621, "model_b_by_1": 0.2555452075, "model_b_by_2_plus": 0.3261914959, "expected_goals_a": 0.8847115921, "expected_goals_b": 1.7467163575, "most_likely_score": "0-1", "score_model": "calibrated_v2", "baseline_expected_goals_a": 0.7834312884, "baseline_expected_goals_b": 1.7522829973, "model_version": "context_v1", "lineup_version": "pre_lineup", "context_summary": "無量化人員修正", "attack_factor_a": 1.1292778386, "attack_factor_b": 0.9968232073, "personnel_goal_delta_a": 0.0, "personnel_goal_delta_b": 0.0, "market_a": 0.1799719906, "market_draw": 0.2182108432, "market_b": 0.6018171662, "actual_result": null, "model_brier": null, "baseline_model_brier": null, "market_brier": null, "actual_margin_bucket": null, "predicted_margin_bucket": null, "actual_margin_probability": null, "margin_log_loss": null, "margin_correct": null, "predicted_outcome": "B", "predicted_team": "Scotland", "predicted_probability": 0.5817367033, "confidence_gap": 0.3557863638, "confidence_label": "中信心", "market_team": "Scotland", "market_probability": 0.6018171662, "model_market_agree": true, "margin_summary": "較可能贏 2 球以上", "reviewed_at": "2026-06-13T15:30:00+09:30", "final_pick": "B", "confidence": "中", "venue": "Boston Stadium", "weather": "東北部有局部雷雨風險，可能增加中斷與比賽波動", "personnel": "Scott McTominay 已恢復訓練，蘇格蘭核心中場風險下降；海地未見已核實重大缺席", "other_factors": "context_v1 模型 58.2% 與市場 60.2% 同看蘇格蘭", "rationale": "綜合判斷蘇格蘭獲勝；天氣提高偶然性，所以不列高信心", "source_urls": "https://www.theguardian.com/environment/2026/jun/12/weather-tracker-heat-humidity-thunderstorms-risk-world-cup;https://www.theguardian.com/football/2026/jun/12/scotland-traitors-world-cup-2026-opener-haiti-andy-robertson", "final_pick_team": "Scotland"}, {"date": "2026-06-14", "match_id": "M8", "stage": "Group D", "team_a": "Australia", "team_b": "Turkey", "model_a": 0.2843168414, "model_draw": 0.2545550607, "model_b": 0.4611280979, "baseline_model_a": 0.2431117583, "baseline_model_draw": 0.2455590707, "baseline_model_b": 0.511329171, "model_a_by_1": 0.1779247938, "model_a_by_2_plus": 0.1063920475, "model_b_by_1": 0.2386250654, "model_b_by_2_plus": 0.2225030325, "expected_goals_a": 1.0661020459, "expected_goals_b": 1.4396941356, "most_likely_score": "0-1", "score_model": "calibrated_v2", "baseline_expected_goals_a": 0.9806972411, "baseline_expected_goals_b": 1.5550170447, "model_version": "context_v1", "lineup_version": "pre_lineup", "context_summary": "無量化人員修正", "attack_factor_a": 1.087085801, "attack_factor_b": 0.9258381705, "personnel_goal_delta_a": 0.0, "personnel_goal_delta_b": 0.0, "market_a": 0.1895910781, "market_draw": 0.2527881041, "market_b": 0.5576208178, "actual_result": null, "model_brier": null, "baseline_model_brier": null, "market_brier": null, "actual_margin_bucket": null, "predicted_margin_bucket": null, "actual_margin_probability": null, "margin_log_loss": null, "margin_correct": null, "predicted_outcome": "B", "predicted_team": "Turkey", "predicted_probability": 0.4611280979, "confidence_gap": 0.1768112565, "confidence_label": "低信心", "market_team": "Turkey", "market_probability": 0.5576208178, "model_market_agree": true, "margin_summary": "較可能贏 1 球", "reviewed_at": "2026-06-13T15:30:00+09:30", "final_pick": "B", "confidence": "低", "venue": "BC Place Vancouver", "weather": "加拿大賽區相對涼爽，且 BC Place 場地條件可降低外部天氣干擾", "personnel": "兩隊目前未見已核實的重大核心缺席", "other_factors": "context_v1 模型土耳其 46.1%、澳洲 28.4%、平局 25.5%；市場看土耳其 55.8%", "rationale": "綜合判斷土耳其獲勝；攻防修正縮小優勢，澳洲勝或平的合計風險偏高", "source_urls": "https://www.theguardian.com/environment/2026/jun/12/weather-tracker-heat-humidity-thunderstorms-risk-world-cup;https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_qualification", "final_pick_team": "Turkey"}, {"date": "2026-06-15", "match_id": "M10", "stage": "Group F", "team_a": "Netherlands", "team_b": "Japan", "model_a": 0.3847307956, "model_draw": 0.2511065352, "model_b": 0.3641626692, "baseline_model_a": 0.4147841144, "baseline_model_draw": 0.2569328895, "baseline_model_b": 0.3282829962, "model_a_by_1": 0.2115020699, "model_a_by_2_plus": 0.1732287257, "model_b_by_1": 0.2047177101, "model_b_by_2_plus": 0.1594449591, "expected_goals_a": 1.3517062701, "expected_goals_b": 1.3073729272, "most_likely_score": "1-1", "score_model": "calibrated_v2", "baseline_expected_goals_a": 1.3592917076, "baseline_expected_goals_b": 1.1764225782, "model_version": "context_v1", "lineup_version": "pre_lineup", "context_summary": "無量化人員修正", "attack_factor_a": 0.9944195661, "attack_factor_b": 1.1113123392, "personnel_goal_delta_a": 0.0, "personnel_goal_delta_b": 0.0, "market_a": 0.4770773639, "market_draw": 0.2650429799, "market_b": 0.2578796562, "actual_result": null, "model_brier": null, "baseline_model_brier": null, "market_brier": null, "actual_margin_bucket": null, "predicted_margin_bucket": null, "actual_margin_probability": null, "margin_log_loss": null, "margin_correct": null, "predicted_outcome": "A", "predicted_team": "Netherlands", "predicted_probability": 0.3847307956, "confidence_gap": 0.0205681264, "confidence_label": "低信心", "market_team": "Netherlands", "market_probability": 0.4770773639, "model_market_agree": true, "margin_summary": "較可能贏 1 球", "reviewed_at": "2026-06-13T15:30:00+09:30", "final_pick": "A", "confidence": "低", "venue": "Dallas Stadium", "weather": "達拉斯球場具空調與屋頂，外部高溫對場內比賽影響有限", "personnel": "兩隊目前未見已核實重大核心缺席", "other_factors": "context_v1 模型荷蘭 38.5%、日本 36.4%、平局 25.1%；市場較偏荷蘭 47.7%", "rationale": "綜合判斷荷蘭小勝，但雙方模型差距僅 2.1 個百分點，屬低信心場", "source_urls": "https://www.lemonde.fr/en/environment/article/2026/06/12/world-cup-2026-footballers-compete-with-potentially-dangerous-temperatures_6754390_114.html;https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_qualification", "final_pick_team": "Netherlands"}, {"date": "2026-06-15", "match_id": "M11", "stage": "Group E", "team_a": "Ivory Coast", "team_b": "Ecuador", "model_a": 0.1811962263, "model_draw": 0.2545499745, "model_b": 0.5642537992, "baseline_model_a": 0.1621625275, "baseline_model_draw": 0.2209734329, "baseline_model_b": 0.6168640396, "model_a_by_1": 0.1323199237, "model_a_by_2_plus": 0.0488763026, "model_b_by_1": 0.2741718063, "model_b_by_2_plus": 0.290081993, "expected_goals_a": 0.7048891786, "expected_goals_b": 1.4865535226, "most_likely_score": "0-1", "score_model": "calibrated_v2", "baseline_expected_goals_a": 0.766769292, "baseline_expected_goals_b": 1.7689449937, "model_version": "context_v1", "lineup_version": "pre_lineup", "context_summary": "無量化人員修正", "attack_factor_a": 0.9192976113, "attack_factor_b": 0.8403616438, "personnel_goal_delta_a": 0.0, "personnel_goal_delta_b": 0.0, "market_a": 0.2628326996, "market_draw": 0.3379277567, "market_b": 0.3992395437, "actual_result": null, "model_brier": null, "baseline_model_brier": null, "market_brier": null, "actual_margin_bucket": null, "predicted_margin_bucket": null, "actual_margin_probability": null, "margin_log_loss": null, "margin_correct": null, "predicted_outcome": "B", "predicted_team": "Ecuador", "predicted_probability": 0.5642537992, "confidence_gap": 0.3097038248, "confidence_label": "中信心", "market_team": "Ecuador", "market_probability": 0.3992395437, "model_market_agree": true, "margin_summary": "較可能贏 2 球以上", "reviewed_at": "2026-06-13T15:30:00+09:30", "final_pick": "B", "confidence": "低", "venue": "Philadelphia Stadium", "weather": "費城為露天場地，夏季熱壓力可能降低比賽強度並增加體能不確定性", "personnel": "兩隊目前未見已核實重大核心缺席", "other_factors": "context_v1 模型看好厄瓜多 56.4%，但市場只有 39.9%，仍有明顯分歧", "rationale": "綜合仍選厄瓜多獲勝，但市場分歧使信心維持低；此場是重要驗證案例", "source_urls": "https://www.washingtonpost.com/climate-environment/2026/05/14/this-world-cup-could-be-one-hottest-why-thats-risky-players-fans/;https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_qualification", "final_pick_team": "Ecuador"}, {"date": "2026-06-15", "match_id": "M12", "stage": "Group F", "team_a": "Sweden", "team_b": "Tunisia", "model_a": 0.4363238588, "model_draw": 0.2597531011, "model_b": 0.3039230402, "baseline_model_a": 0.4591386242, "baseline_model_draw": 0.2530966177, "baseline_model_b": 0.2877647581, "model_a_by_1": 0.2336504068, "model_a_by_2_plus": 0.202673452, "model_b_by_1": 0.1873692633, "model_b_by_2_plus": 0.1165537769, "expected_goals_a": 1.36889014, "expected_goals_b": 1.0920611117, "most_likely_score": "1-1", "score_model": "calibrated_v2", "baseline_expected_goals_a": 1.4497801055, "baseline_expected_goals_b": 1.0859341802, "model_version": "context_v1", "lineup_version": "pre_lineup", "context_summary": "無量化人員修正", "attack_factor_a": 0.9442053556, "attack_factor_b": 1.0056420837, "personnel_goal_delta_a": 0.0, "personnel_goal_delta_b": 0.0, "market_a": 0.507859734, "market_draw": 0.2684401451, "market_b": 0.2237001209, "actual_result": null, "model_brier": null, "baseline_model_brier": null, "market_brier": null, "actual_margin_bucket": null, "predicted_margin_bucket": null, "actual_margin_probability": null, "margin_log_loss": null, "margin_correct": null, "predicted_outcome": "A", "predicted_team": "Sweden", "predicted_probability": 0.4363238588, "confidence_gap": 0.1324008186, "confidence_label": "低信心", "market_team": "Sweden", "market_probability": 0.507859734, "model_market_agree": true, "margin_summary": "較可能贏 1 球", "reviewed_at": "2026-06-13T15:30:00+09:30", "final_pick": "A", "confidence": "低", "venue": "Monterrey Stadium", "weather": "蒙特雷高溫是實質風險，可能降低節奏與放大體能、輪換影響", "personnel": "兩隊目前未見已核實重大核心缺席", "other_factors": "context_v1 模型瑞典 43.6%、平局 26.0%、突尼西亞 30.4%；市場看瑞典 50.8%", "rationale": "綜合判斷瑞典獲勝；高溫及有限勝率使本場維持低信心", "source_urls": "https://www.theguardian.com/environment/2026/jun/12/weather-tracker-heat-humidity-thunderstorms-risk-world-cup;https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_qualification", "final_pick_team": "Sweden"}, {"date": "2026-06-15", "match_id": "M9", "stage": "Group E", "team_a": "Germany", "team_b": "Curacao", "model_a": 0.8184307061, "model_draw": 0.1321319052, "model_b": 0.0494373887, "baseline_model_a": 0.7881672657, "baseline_model_draw": 0.1552084299, "baseline_model_b": 0.0566243044, "model_a_by_1": 0.231380738, "model_a_by_2_plus": 0.5870499681, "model_b_by_1": 0.0414828681, "model_b_by_2_plus": 0.0079545206, "expected_goals_a": 2.3902349616, "expected_goals_b": 0.409379869, "most_likely_score": "2-0", "score_model": "calibrated_v2", "baseline_expected_goals_a": 2.1483818514, "baseline_expected_goals_b": 0.3873324343, "model_version": "context_v1", "lineup_version": "pre_lineup", "context_summary": "無量化人員修正", "attack_factor_a": 1.1125745454, "attack_factor_b": 1.0569212201, "personnel_goal_delta_a": 0.0, "personnel_goal_delta_b": 0.0, "market_a": 0.9115450041, "market_draw": 0.0557651061, "market_b": 0.0326898898, "actual_result": null, "model_brier": null, "baseline_model_brier": null, "market_brier": null, "actual_margin_bucket": null, "predicted_margin_bucket": null, "actual_margin_probability": null, "margin_log_loss": null, "margin_correct": null, "predicted_outcome": "A", "predicted_team": "Germany", "predicted_probability": 0.8184307061, "confidence_gap": 0.6862988009, "confidence_label": "高信心", "market_team": "Germany", "market_probability": 0.9115450041, "model_market_agree": true, "margin_summary": "較可能贏 2 球以上", "reviewed_at": "2026-06-13T15:30:00+09:30", "final_pick": "A", "confidence": "高", "venue": "Houston Stadium", "weather": "休士頓極端濕熱，但球場具可開闔屋頂，場內環境可降低直接影響", "personnel": "目前未見德國核心球員已核實重大缺席", "other_factors": "context_v1 模型 81.8%、市場 91.2% 均明確支持德國", "rationale": "綜合判斷德國獲勝；即使市場可能過度集中，勝負方向仍非常清楚", "source_urls": "https://www.houstonchronicle.com/news/houston-weather/forecast/article/houston-fifa-fan-fest-weekend-heat-safety-22301010.php;https://www.theguardian.com/environment/2026/jun/12/weather-tracker-heat-humidity-thunderstorms-risk-world-cup", "final_pick_team": "Germany"}], "completedMatches": [{"match_id": "M1", "date": "2026-06-11", "stage": "Group A", "team_a": "Mexico", "team_b": "South Africa", "actual_score": "2-0", "actual_outcome": "A", "predicted_outcome": "A", "model_a": 0.7643941511, "model_draw": 0.1663136638, "model_b": 0.0692921851, "actual_outcome_probability": 0.7643941511, "model_brier": 0.0879717577, "expected_goals_a": 2.0910347487, "expected_goals_b": 0.444679537, "expected_margin": 1.6463552117, "actual_margin": 2, "margin_error": 0.3536447883, "actual_margin_bucket": "team_a_by_2_plus", "predicted_margin_bucket": "team_a_by_2_plus", "margin_correct": true, "actual_margin_probability": 0.5061032972, "margin_log_loss": 0.6810144859, "most_likely_score": "2-0", "actual_score_probability": 0.1731593433, "score_surprise": 1.753543049, "elo_snapshot": 20260612, "snapshot_quality": "retrospective_proxy", "score_model": "calibrated_v2", "discussion": "模型方向判斷正確，預期淨勝差也接近實際。實際結果在模型分布中具有相當機率。 本場使用隔日最早 Elo 快照回溯，不能視為嚴格賽前回測。", "analyst_final_pick": null, "analyst_confidence": null, "analyst_rationale": null, "analyst_correct": null}, {"match_id": "M2", "date": "2026-06-11", "stage": "Group A", "team_a": "South Korea", "team_b": "Czechia", "actual_score": "2-1", "actual_outcome": "A", "predicted_outcome": "A", "model_a": 0.4485837533, "model_draw": 0.2542295027, "model_b": 0.297186744, "actual_outcome_probability": 0.4485837533, "model_brier": 0.4570124779, "expected_goals_a": 1.4283703853, "expected_goals_b": 1.1073439004, "expected_margin": 0.3210264848, "actual_margin": 1, "margin_error": 0.6789735152, "actual_margin_bucket": "team_a_by_1", "predicted_margin_bucket": "team_a_by_1", "margin_correct": true, "actual_margin_probability": 0.2342687692, "margin_log_loss": 1.4512862364, "most_likely_score": "1-1", "actual_score_probability": 0.0894720683, "score_surprise": 2.4138287889, "elo_snapshot": 20260612, "snapshot_quality": "retrospective_proxy", "score_model": "calibrated_v2", "discussion": "模型方向判斷正確，但對勝負差距的估計仍有偏差。實際結果在模型分布中具有相當機率。 本場使用隔日最早 Elo 快照回溯，不能視為嚴格賽前回測。", "analyst_final_pick": null, "analyst_confidence": null, "analyst_rationale": null, "analyst_correct": null}, {"match_id": "M3", "date": "2026-06-12", "stage": "Group B", "team_a": "Canada", "team_b": "Bosnia", "actual_score": "1-1", "actual_outcome": "D", "predicted_outcome": "A", "model_a": 0.6429144834, "model_draw": 0.2130457302, "model_b": 0.1440397865, "actual_outcome_probability": 0.2130457302, "model_brier": 1.0533835158, "expected_goals_a": 1.8229992359, "expected_goals_b": 0.7127150498, "expected_margin": 1.1102841862, "actual_margin": 0, "margin_error": 1.1102841862, "actual_margin_bucket": "draw", "predicted_margin_bucket": "team_a_by_2_plus", "margin_correct": false, "actual_margin_probability": 0.2130457302, "margin_log_loss": 1.5462484406, "most_likely_score": "1-0", "actual_score_probability": 0.0990422198, "score_surprise": 2.3122090573, "elo_snapshot": 20260612, "snapshot_quality": "exact_pre_match", "score_model": "calibrated_v2", "discussion": "實際為平局，模型則偏向 Canada；顯示強弱差仍可能高估成勝負結果。實際結果並非模型主要情境，但仍在合理尾端範圍。", "analyst_final_pick": null, "analyst_confidence": null, "analyst_rationale": null, "analyst_correct": null}, {"match_id": "M4", "date": "2026-06-12", "stage": "Group D", "team_a": "USA", "team_b": "Paraguay", "actual_score": "4-1", "actual_outcome": "A", "predicted_outcome": "B", "model_a": 0.3422870561, "model_draw": 0.2576565564, "model_b": 0.4000563875, "actual_outcome_probability": 0.3422870561, "model_brier": 0.6590183309, "expected_goals_a": 1.206841928, "expected_goals_b": 1.3288723577, "expected_margin": -0.1220304298, "actual_margin": 3, "margin_error": 3.1220304298, "actual_margin_bucket": "team_a_by_2_plus", "predicted_margin_bucket": "team_b_by_1", "margin_correct": false, "actual_margin_probability": 0.141818923, "margin_log_loss": 1.9532042254, "most_likely_score": "1-1", "actual_score_probability": 0.0093030823, "score_surprise": 4.6774094991, "elo_snapshot": 20260612, "snapshot_quality": "exact_pre_match", "score_model": "calibrated_v2", "discussion": "模型方向判斷錯誤，實際勝方是 USA。實際結果在模型分布中具有相當機率。", "analyst_final_pick": null, "analyst_confidence": null, "analyst_rationale": null, "analyst_correct": null}], "completedSummary": {"matches": 4, "direction_correct": 2, "direction_accuracy": 0.5, "mean_brier": 0.5643465205781621, "mean_actual_outcome_probability": 0.44207767266716075, "mean_margin_error": 1.3162332298466635, "margin_correct": 2, "margin_accuracy": 0.5, "mean_margin_log_loss": 1.4079383470634221}, "analystSummary": {"matches": 0, "correct": 0, "accuracy": null}, "completedFactors": [{"match_id": "M3", "reported_at": "2026-06-12", "category": "人員缺席", "factor": "Alphonso Davies 因腿後肌傷勢缺席", "evidence": "加拿大缺少最具突破與推進能力的主力之一", "model_implication": "未量化傷停可能使模型高估加拿大進攻上限", "source_name": "ESPN", "source_url": "https://www.espn.com/soccer/report/_/gameId/760416"}, {"match_id": "M3", "reported_at": "2026-06-12", "category": "定位球", "factor": "波士尼亞第21分鐘由角球套路取得領先", "evidence": "Kolasinac 頭球擺渡後由臨時先發的 Jovo Lukic 頂進", "model_implication": "模型只有整體 Elo 強弱，沒有單場定位球對位特徵", "source_name": "ESPN", "source_url": "https://www.espn.com/soccer/report/_/gameId/760416"}, {"match_id": "M3", "reported_at": "2026-06-12", "category": "射門轉化", "factor": "加拿大控制比賽但多次在最後一擊失敗", "evidence": "Jonathan David 錯失良機；Laryea 射門被擋到橫樑；Oluwaseyi 頭球遭門線解圍", "model_implication": "比分模型能表達隨機性但無法預知單場把握度與關鍵封堵", "source_name": "The Guardian", "source_url": "https://www.theguardian.com/football/2026/jun/12/canada-bosnia-herzegovina-world-cup-2026-group-b-match-report"}, {"match_id": "M3", "reported_at": "2026-06-12", "category": "選人與換人", "factor": "Cyle Larin 未先發但替補後121秒即扳平", "evidence": "加拿大第61分鐘三換人後前場活力提升，Larin 第76分鐘上場後立即進球", "model_implication": "先發與替補角色未進入目前賽前數值模型", "source_name": "The Guardian", "source_url": "https://www.theguardian.com/football/2026/jun/12/canada-bosnia-herzegovina-world-cup-2026-group-b-match-report"}, {"match_id": "M3", "reported_at": "2026-06-12", "category": "對手不確定性", "factor": "Jovo Lukic 代替受傷前鋒先發並攻入國家隊首球", "evidence": "Lukic 僅第4次國家隊出場，原本是 Dzeko 與 Tabakovic 缺陣後的替代人選", "model_implication": "低出場樣本球員的臨場影響難由國家隊 Elo 捕捉", "source_name": "ESPN", "source_url": "https://www.espn.com/soccer/report/_/gameId/760416"}, {"match_id": "M3", "reported_at": "2026-06-12", "category": "犯規與紀律", "factor": "沒有證據顯示犯規或紅牌主導賽果", "evidence": "主要紀律事件是補時階段 Katic 拉倒 Larin 吃黃牌；沒有改變比分的紅牌或十二碼", "model_implication": "目前不應把這場失準歸因於裁判或紀律因素", "source_name": "The Guardian live", "source_url": "https://www.theguardian.com/football/live/2026/jun/12/canada-v-bosnia-and-herzegovina-world-cup-2026-live"}], "divergence": [{"date": "2026-06-18", "match_id": "M23", "stage": "Group L", "team_a": "Ghana", "team_b": "Panama", "outcome": "Panama", "model_probability": 0.6110471011, "market_probability": 0.2875429882, "divergence": 0.323504113, "direction": "model_over_market"}, {"date": "2026-06-18", "match_id": "M23", "stage": "Group L", "team_a": "Ghana", "team_b": "Panama", "outcome": "Ghana", "model_probability": 0.1681592878, "market_probability": 0.4413450516, "divergence": 0.2731857638, "direction": "market_over_model"}, {"date": "2026-06-28", "match_id": "M67", "stage": "Group L", "team_a": "Croatia", "team_b": "Ghana", "outcome": "Croatia", "model_probability": 0.7774025979, "market_probability": 0.568107041, "divergence": 0.2092955569, "direction": "model_over_market"}, {"date": "2026-06-27", "match_id": "M65", "stage": "Group G", "team_a": "Egypt", "team_b": "Iran", "outcome": "Iran", "model_probability": 0.4665713564, "market_probability": 0.2606635071, "divergence": 0.2059078493, "direction": "model_over_market"}, {"date": "2026-06-26", "match_id": "M56", "stage": "Group E", "team_a": "Ecuador", "team_b": "Germany", "outcome": "Germany", "model_probability": 0.3535690227, "market_probability": 0.5518087063, "divergence": 0.1982396836, "direction": "market_over_model"}, {"date": "2026-06-26", "match_id": "M56", "stage": "Group E", "team_a": "Ecuador", "team_b": "Germany", "outcome": "Ecuador", "model_probability": 0.3834055719, "market_probability": 0.1876149601, "divergence": 0.1957906118, "direction": "model_over_market"}, {"date": "2026-06-22", "match_id": "M38", "stage": "Group G", "team_a": "Belgium", "team_b": "Iran", "outcome": "Belgium", "model_probability": 0.4876535401, "market_probability": 0.6690140845, "divergence": 0.1813605444, "direction": "market_over_model"}, {"date": "2026-06-26", "match_id": "M57", "stage": "Group F", "team_a": "Japan", "team_b": "Sweden", "outcome": "Japan", "model_probability": 0.6375915663, "market_probability": 0.4569015166, "divergence": 0.1806900497, "direction": "model_over_market"}, {"date": "2026-06-20", "match_id": "M29", "stage": "Group D", "team_a": "USA", "team_b": "Australia", "outcome": "USA", "model_probability": 0.3652600187, "market_probability": 0.5439943819, "divergence": 0.1787343632, "direction": "market_over_model"}, {"date": "2026-06-15", "match_id": "M11", "stage": "Group E", "team_a": "Ivory Coast", "team_b": "Ecuador", "outcome": "Ecuador", "model_probability": 0.5642537992, "market_probability": 0.3992395437, "divergence": 0.1650142555, "direction": "model_over_market"}, {"date": "2026-06-20", "match_id": "M29", "stage": "Group D", "team_a": "USA", "team_b": "Australia", "outcome": "Australia", "model_probability": 0.3780683076, "market_probability": 0.2160901471, "divergence": 0.1619781605, "direction": "model_over_market"}, {"date": "2026-06-27", "match_id": "M65", "stage": "Group G", "team_a": "Egypt", "team_b": "Iran", "outcome": "Egypt", "model_probability": 0.2753645357, "market_probability": 0.4265402844, "divergence": 0.1511757486, "direction": "market_over_model"}], "calibration": [{"date": "2026-06-13", "model_brier": 0.691546704, "baseline_model_brier": null, "market_brier": 0.4290484662, "margin_log_loss": null, "margin_accuracy": null, "matches": 1}], "teamNews": [{"verified_at": "2026-06-13T09:30:00+09:30", "source_date": "2026-06-13", "match_id": "M5", "team": "Qatar", "player": "Tarek Salman", "status": "確認停賽", "note": "資格賽紅牌停賽延續至瑞士與加拿大兩場", "model_treatment": "不自動調整 Elo；人工分析下調中路防守", "impact_area": "defense", "player_importance": 0.7, "position": "DF", "source_url": "https://en.wikipedia.org/wiki/2026_FIFA_World_Cup", "risk_level": "高", "risk_impact": "可能直接改變先發、輪換或戰術結構；不自動調整 Elo；人工分析下調中路防守"}, {"verified_at": "2026-06-13T09:30:00+09:30", "source_date": "2026-06-12", "match_id": "M6", "team": "Brazil", "player": "Neymar", "status": "確認缺席", "note": "小腿傷勢令其缺席對摩洛哥的首戰", "model_treatment": "不自動調整 Elo；人工分析下調前場創造力", "impact_area": "attack", "player_importance": 0.85, "position": "FW", "source_url": "https://www.theguardian.com/football/2026/jun/12/more-pressure-than-the-president-ancelotti-sets-out-to-end-brazils-world-cup-drought", "risk_level": "高", "risk_impact": "可能直接改變先發、輪換或戰術結構；不自動調整 Elo；人工分析下調前場創造力"}, {"verified_at": "2026-06-13T09:30:00+09:30", "source_date": "2026-06-12", "match_id": "M7", "team": "Scotland", "player": "Scott McTominay", "status": "恢復訓練", "note": "輕微腸胃不適後已回到訓練；教練表示狀態良好", "model_treatment": "不調整 Elo；保留臨場體能風險", "impact_area": "both", "player_importance": 0.8, "position": "MF", "source_url": "https://www.theguardian.com/football/2026/jun/12/scotland-traitors-world-cup-2026-opener-haiti-andy-robertson", "risk_level": "低", "risk_impact": "目前影響有限，仍保留體能或傷後狀態風險；不調整 Elo；保留臨場體能風險"}, {"verified_at": "2026-06-13T09:30:00+09:30", "source_date": "2026-06-11", "match_id": "M4", "team": "USA", "player": "Chris Richards", "status": "可出賽", "note": "美國足協確認已恢復完整合練且自述適合出賽", "model_treatment": "不調整 Elo；保留傷後首戰的狀態不確定性", "impact_area": "defense", "player_importance": 0.7, "position": "DF", "source_url": "https://www.ussoccer.com/stories/2026/06/usmnt/chris-richards-fitness-vs-paraguay-world-cup-group-stage", "risk_level": "低", "risk_impact": "目前影響有限，仍保留體能或傷後狀態風險；不調整 Elo；保留傷後首戰的狀態不確定性"}, {"verified_at": "2026-06-13T09:30:00+09:30", "source_date": "2026-06-09", "match_id": "M6", "team": "Morocco", "player": "Noussair Mazraoui", "status": "出賽成疑", "note": "最後一場熱身賽第29分鐘因不適退場", "model_treatment": "不自動調整 Elo；人工分析降低邊路防守確定性", "impact_area": "defense", "player_importance": 0.7, "position": "DF", "source_url": "https://www.thesun.ie/sport/17070767/man-utd-noussair-mazraoui-morocco-norway-world-cup/", "risk_level": "中", "risk_impact": "先發與臨場狀態仍不確定，需開賽前複核；不自動調整 Elo；人工分析降低邊路防守確定性"}, {"verified_at": "2026-06-13T09:30:00+09:30", "source_date": "2026-06-09", "match_id": "M6", "team": "Morocco", "player": "Abde Ezzalzouli", "status": "出賽成疑", "note": "最後一場熱身賽碰撞後半場未再出賽", "model_treatment": "不自動調整 Elo；人工分析降低邊路進攻確定性", "impact_area": "attack", "player_importance": 0.55, "position": "FW", "source_url": "https://www.thesun.ie/sport/17070767/man-utd-noussair-mazraoui-morocco-norway-world-cup/", "risk_level": "中", "risk_impact": "先發與臨場狀態仍不確定，需開賽前複核；不自動調整 Elo；人工分析降低邊路進攻確定性"}, {"verified_at": "2026-06-13T09:30:00+09:30", "source_date": "2026-06-06", "match_id": "M4", "team": "Paraguay", "player": "Julio Enciso", "status": "出賽成疑", "note": "熱身賽受傷後被擔架抬離；後續先發資訊仍需臨場核對", "model_treatment": "不自動調整 Elo；人工分析下調進攻創造力", "impact_area": "attack", "player_importance": 0.75, "position": "FW", "source_url": "https://nypost.com/2026/06/06/sports/paraguay-loses-star-player-julio-enciso-one-week-before-world-cup/", "risk_level": "中", "risk_impact": "先發與臨場狀態仍不確定，需開賽前複核；不自動調整 Elo；人工分析下調進攻創造力"}]};
+const pct=v => v==null||Number.isNaN(+v) ? "—" : `${(+v*100).toFixed(1)}%`;
+const fixed=(v,digits=3)=>v==null||Number.isNaN(+v) ? "—" : (+v).toFixed(digits);
+document.getElementById("generated").textContent=`UPDATED ${D.generated}`;
+const leader=D.latest[0]||{};
+const completed=D.calibration.length;
+const reviewed=D.completedSummary.matches||0;
+document.getElementById("metrics").innerHTML=[
+  ["奪冠熱門",leader.team||"尚無資料"],["模型機率",pct(leader.champion)],
+  ["綜合判斷命中",D.analystSummary.matches?`${D.analystSummary.correct} / ${D.analystSummary.matches}`:"尚未結算"],
+  ["淨勝分類命中",reviewed?`${D.completedSummary.margin_correct} / ${reviewed}`:"0"]
+].map(x=>`<div class="metric"><span>${x[0]}</span><b>${x[1]}</b></div>`).join("");
+
+const colors=["#123f2d","#d36b3f","#5077a3","#b59b32","#714f85","#548c6d","#a34d58","#69736e"];
+function lineChart(id, labels, datasets, emptyText) {
+  const canvas=document.getElementById(id);
+  if(!datasets.length || typeof Chart==="undefined") {
+    canvas.replaceWith(Object.assign(document.createElement("div"),{className:"empty",textContent:emptyText}));
+    return;
+  }
+  new Chart(canvas,{type:"line",data:{labels,datasets},options:{
+    responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+    plugins:{legend:{position:"bottom",labels:{usePointStyle:true,boxWidth:8}}},
+    scales:{y:{ticks:{callback:v=>`${v}%`},grid:{color:"#e6e1d7"}},x:{grid:{display:false}}}
+  }});
+}
+const historyDates=[...new Set(D.history.map(x=>x.date))].sort();
+lineChart("titleChart",historyDates,D.topTeams.map((team,i)=>({
+  label:team,borderColor:colors[i],backgroundColor:colors[i],tension:.25,pointRadius:3,
+  data:historyDates.map(day=>{const r=D.history.find(x=>x.team===team&&x.date===day);return r?+r.champion*100:null})
+})),"尚無機率快照");
+
+const statusLabel=value=>value==="direct"?"預測前二":value==="best_third"?"最佳第三名":"暫不出線";
+const statusClass=value=>value==="direct"?"status-direct":value==="best_third"?"status-third":"status-out";
+document.getElementById("groupPredictions").innerHTML=D.groupPredictions.length?`<div class="group-grid">${
+ D.groupPredictions.map(group=>`<article class="group-card"><h3>Group ${group.group}</h3>
+ ${group.teams.map(team=>`<div class="qualifier-row">
+   <div><strong>${team.team}</strong><br><span class="qualifier-status ${statusClass(team.status)}">${statusLabel(team.status)}</span></div>
+   <small>32強<br><strong>${pct(team.r32)}</strong></small>
+   <small>組首<br><strong>${pct(team.group_winner)}</strong></small>
+ </div>`).join("")}</article>`).join("")
+}</div>`:`<div class="empty">尚無小組出線模擬資料</div>`;
+
+function probabilityCells(r,prefix) {
+  return `<div class="prob">${pct(r[prefix+"_a"])} / ${pct(r[prefix+"_draw"])} / ${pct(r[prefix+"_b"])}</div>
+  <div class="bar"><i style="width:${+r[prefix+"_a"]*100}%"></i><i style="width:${+r[prefix+"_draw"]*100}%"></i><i style="width:${+r[prefix+"_b"]*100}%"></i></div>`;
+}
+function marginCells(r) {
+  if(r.model_a_by_1==null) return "—";
+  return `<div class="prob">${r.team_a} +1 ${pct(r.model_a_by_1)} · +2 ${pct(r.model_a_by_2_plus)}</div>
+  <div class="prob">${r.team_b} +1 ${pct(r.model_b_by_1)} · +2 ${pct(r.model_b_by_2_plus)}</div>
+  <small>xG ${(+r.expected_goals_a).toFixed(2)}–${(+r.expected_goals_b).toFixed(2)} · mode ${r.most_likely_score}</small>`;
+}
+const sourceLinks=value=>String(value||"").split(";").filter(Boolean).map((url,i)=>
+ `<a class="source-link" href="${url}" target="_blank" rel="noreferrer">來源${i+1}</a>`
+).join(" · ");
+const dayLabel=value=>new Intl.DateTimeFormat("zh-Hant",{month:"numeric",day:"numeric",weekday:"short"}).format(new Date(value+"T12:00:00"));
+const upcomingDates=[...new Set(D.upcoming.map(r=>r.date))].sort();
+document.getElementById("upcoming").innerHTML=D.upcoming.length?`<div class="days">${
+ upcomingDates.map(day=>`<section><h3 class="day-title">${dayLabel(day)} <span>${day}</span></h3>
+ <div class="match-cards">${D.upcoming.filter(r=>r.date===day).map(r=>`<article class="match-card">
+   <div class="match-head"><span class="tag">${r.match_id}</span><span>${r.stage}</span></div>
+   <div class="teams">${r.team_a} vs ${r.team_b}</div>
+   ${r.final_pick_team?`<div class="final-pick"><small>綜合最終判斷 · ${r.confidence}信心</small>
+     <strong>${r.final_pick_team}</strong></div>`:""}
+   <div class="pick"><small>模型原始判斷</small><strong>${r.predicted_team}</strong>
+     <span class="confidence">${r.confidence_label} · ${pct(r.predicted_probability)}</span></div>
+   <div class="quick">
+     <div><small>最可能比分</small><br><strong>${r.most_likely_score}</strong></div>
+     <div><small>勝負差方向</small><br><strong>${r.margin_summary}</strong></div>
+   </div>
+   <div>市場看好 <strong>${r.market_team}</strong> ${pct(r.market_probability)} ·
+     <span class="${r.model_market_agree?"agree":"disagree"}">${r.model_market_agree?"模型與市場同方向":"模型與市場不同方向"}</span></div>
+   <details><summary>查看完整數據</summary>
+     <p><strong>模型版本</strong><br>${r.model_version||"baseline"} ·
+       ${r.lineup_version==="official_lineup"?"官方先發版":r.lineup_version==="partial_lineup"?"部分先發資訊":"賽前名單版"}</p>
+     <p><strong>模型 A / 和 / B</strong><br>${probabilityCells(r,"model")}</p>
+     ${r.baseline_model_a!=null?`<p><strong>純 Elo 基準 A / 和 / B</strong><br>${probabilityCells(r,"baseline_model")}</p>`:""}
+     <p><strong>市場 A / 和 / B</strong><br>${probabilityCells(r,"market")}</p>
+     <p>${marginCells(r)}</p>
+     ${r.attack_factor_a!=null?`<p><strong>攻防倍率：</strong>${r.team_a} ×${(+r.attack_factor_a).toFixed(3)} ·
+       ${r.team_b} ×${(+r.attack_factor_b).toFixed(3)}<br>
+       <strong>人員 xG 修正：</strong>${r.team_a} ${(+r.personnel_goal_delta_a).toFixed(3)} ·
+       ${r.team_b} ${(+r.personnel_goal_delta_b).toFixed(3)}<br>
+       <small>${r.context_summary||"無量化人員修正"}</small></p>`:""}
+   </details>
+   ${r.final_pick_team?`<details><summary>綜合判斷依據</summary>
+     <ul class="analysis-basis">
+       <li><strong>場地：</strong>${r.venue}</li>
+       <li><strong>天氣：</strong>${r.weather}</li>
+       <li><strong>人員：</strong>${r.personnel}</li>
+       <li><strong>其他：</strong>${r.other_factors}</li>
+     </ul>
+     <p><strong>結論：</strong>${r.rationale}</p>
+     <small>判斷時間：${String(r.reviewed_at).replace("T"," ")} · ${sourceLinks(r.source_urls)}</small>
+   </details>`:""}
+ </article>`).join("")}</div></section>`).join("")
+}</div>`:`<div class="empty">在 data/odds.csv 加入未來三天賽事後顯示</div>`;
+
+document.getElementById("divergence").innerHTML=D.divergence.length?`<table><thead><tr><th>選項</th><th>差距</th><th>方向</th></tr></thead><tbody>${
+ D.divergence.map(r=>`<tr><td>${r.team_a} vs ${r.team_b}<br><strong>${r.outcome}</strong></td>
+ <td class="${+r.divergence>=.08?"hot":""}">${pct(r.divergence)}</td><td>${r.direction==="model_over_market"?"模型較高":"市場較高"}</td></tr>`).join("")
+}</tbody></table>`:`<div class="empty">尚無市場賠率可比較</div>`;
+
+const outcomeName=(value,a,b)=>value==="A"?a:value==="B"?b:"平局";
+const marginName=(value,a,b)=>value==="team_a_by_1"?`${a} +1`:
+ value==="team_a_by_2_plus"?`${a} +2以上`:
+ value==="team_b_by_1"?`${b} +1`:
+ value==="team_b_by_2_plus"?`${b} +2以上`:"平局";
+const factorCards=rows=>`<div class="factor-grid">${rows.map(f=>`<article class="factor">
+ <span class="tag">${f.category}</span><b>${f.factor}</b>
+ <p>${f.evidence}</p><small><strong>模型含意：</strong>${f.model_implication}</small><br>
+ <a class="source-link" href="${f.source_url}" target="_blank" rel="noreferrer">${f.source_name} · ${f.reported_at}</a>
+</article>`).join("")}</div>`;
+document.getElementById("completedMatches").innerHTML=D.completedMatches.length?`
+<div class="sub">方向命中 ${D.completedSummary.direction_correct}/${D.completedSummary.matches} ·
+淨勝分類命中 ${D.completedSummary.margin_correct}/${D.completedSummary.matches} ·
+平均 Brier ${(+D.completedSummary.mean_brier).toFixed(3)} ·
+分類 Log Loss ${fixed(D.completedSummary.mean_margin_log_loss)}</div>
+<table><thead><tr><th>賽事／實際</th><th>模型預測</th><th>差距</th><th>討論</th></tr></thead><tbody>${
+ D.completedMatches.map(r=>{
+ const factors=D.completedFactors.filter(f=>f.match_id===r.match_id);
+ return `<tr>
+ <td><span class="tag">${r.match_id}</span> ${r.team_a} ${r.actual_score} ${r.team_b}<br>
+ <small>${r.snapshot_quality==="retrospective_proxy"?"回溯快照":"賽前快照"} · ${r.elo_snapshot}</small></td>
+ <td>${probabilityCells(r,"model")}<small>主判斷：${outcomeName(r.predicted_outcome,r.team_a,r.team_b)} ·
+ 淨勝分類：<strong>${marginName(r.predicted_margin_bucket,r.team_a,r.team_b)}</strong> ·
+ mode ${r.most_likely_score}</small>
+ ${r.analyst_final_pick?`<br><small>綜合判斷：<strong>${outcomeName(r.analyst_final_pick,r.team_a,r.team_b)}</strong>
+ · ${r.analyst_confidence}信心 · ${String(r.analyst_correct).toLowerCase()==="true"?"命中":"未命中"}</small>`:""}</td>
+ <td>實際結果機率 <strong>${pct(r.actual_outcome_probability)}</strong><br>
+ 實際分類：${marginName(r.actual_margin_bucket,r.team_a,r.team_b)} ·
+ 機率 ${pct(r.actual_margin_probability)}<br>
+ Brier ${(+r.model_brier).toFixed(3)} · 分類 Log Loss ${(+r.margin_log_loss).toFixed(3)}</td>
+ <td style="white-space:normal;min-width:280px">${r.discussion}</td></tr>
+ ${factors.length?`<tr class="investigation-row"><td colspan="4">
+ <details><summary>展開失準原因調查（${factors.length} 項）</summary>
+ <p class="sub">賽後報導支持的可能因素，用於解釋與改進，不代表能在賽前完全預知。</p>
+ ${factorCards(factors)}</details></td></tr>`:""}`;
+ }).join("")
+}</tbody></table>`:`<div class="empty">尚無已完成賽事可回顧</div>`;
+
+const riskClass=value=>value==="高"?"risk-high":value==="中"?"risk-medium":"risk-low";
+document.getElementById("teamNews").innerHTML=D.teamNews.length?`<table><thead><tr><th>消息日期</th><th>賽事／球員</th><th>最新狀況</th><th>風險評估</th><th>來源</th></tr></thead><tbody>${
+ D.teamNews.map(r=>`<tr>
+ <td><strong>${r.source_date||"未標示"}</strong><br><span class="news-date">查核：${String(r.verified_at).slice(0,16).replace("T"," ")}</span></td>
+ <td><span class="tag">${r.match_id}</span> ${r.team}<br><strong>${r.player}</strong></td>
+ <td><strong>${r.status}</strong><br><span style="white-space:normal">${r.note}</span></td>
+ <td><span class="risk ${riskClass(r.risk_level)}">${r.risk_level}風險</span>
+ <span class="risk-impact">${r.risk_impact}</span></td>
+ <td><a class="source-link" href="${r.source_url}" target="_blank" rel="noreferrer">查看消息</a></td></tr>`).join("")
+}</tbody></table>`:`<div class="empty">今天尚無已核實的傷停情報</div>`;
+
+const calDates=D.calibration.map(x=>x.date);
+let calibrationRendered=false;
+const renderCalibration=()=>{
+ if(calibrationRendered) return;
+ calibrationRendered=true;
+ lineChart("brierChart",calDates,completed?[
+  {label:"前三項新版",borderColor:colors[0],backgroundColor:colors[0],data:D.calibration.map(x=>x.model_brier),tension:.25},
+  {label:"純 Elo 基準",borderColor:colors[2],backgroundColor:colors[2],data:D.calibration.map(x=>x.baseline_model_brier),tension:.25},
+  {label:"市場",borderColor:colors[1],backgroundColor:colors[1],data:D.calibration.map(x=>x.market_brier),tension:.25}
+ ]:[],"完成賽事並寫入賽果後顯示");
+};
+document.getElementById("calibrationDetails").addEventListener("toggle",event=>{
+ if(event.currentTarget.open) renderCalibration();
+});
+</script>
+</body>
+</html>
